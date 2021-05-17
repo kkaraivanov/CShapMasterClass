@@ -3,28 +3,29 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Reflection;
 
     public class MyServiceProvider : IMyServiceProvider
     {
+        private readonly Dictionary<Type, Type> _types;
+
         public MyServiceProvider()
         {
+            _types = new Dictionary<Type, Type>();
         }
 
         public void Add<TSource, TDestination>()
             where TDestination : TSource
         {
-            var assembly = Assembly.GetCallingAssembly();
-            var types = assembly.GetTypes().Where(x => typeof(TSource).IsAssignableFrom(x) && !x.IsInterface);
-            
-            foreach (var type in types)
-            {
-                CreateInstance(type);
-            }
+            _types[typeof(TSource)] = typeof(TDestination);
         }
 
         public object CreateInstance(Type type)
         {
+            if (!_types.ContainsKey(type) && !_types.ContainsValue(type))
+            {
+                return null;
+            }
+
             var ctors = type.GetConstructors();
             var ctor = ctors.FirstOrDefault();
             var ctorParams = GetParameter(type);
